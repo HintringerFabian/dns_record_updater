@@ -1,1 +1,1 @@
-Godaddy DNS record updater
+# Godaddy DNS record updater
