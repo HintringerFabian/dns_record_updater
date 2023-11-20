@@ -5,16 +5,21 @@ import requests
 import json
 import ipaddress
 from EnvReader import EnvReader
+import logging
+from Logger import Logger
 
-failed_ip_req = "-1.-1.-1.-1"
+logger = Logger()
 
 
 def find_current_ip_address():
     try:
         external_ip = get('https://api.ipify.org').content.decode('utf8')
-    except ValueError:
-        external_ip = failed_ip_req
-        print("Retrieve of external ip did not work")
+    except (Exception,) as e:
+        logger.print_and_log(
+            "Failed to retrieve your public ip address" + e
+            , logging.WARNING
+        )
+        exit(-1)
 
     return ipaddress.IPv4Address(external_ip)
 
@@ -31,7 +36,15 @@ def get_dns_records():
         "Authorization": f"sso-key {env.api_key}:{env.api_secret}"
     }
 
-    req = requests.request("GET", url, data=payload, headers=headers).text
+    try:
+        req = requests.request("GET", url, data=payload, headers=headers).text
+    except (Exception,) as e:
+        logger.print_and_log(
+            "Failed to retrieve your dns records" + e
+            , logging.WARNING
+        )
+        exit(-1)
+
     return json.loads(req)
 
 
@@ -45,6 +58,9 @@ def find_godaddy_ip():
         match = ip_regex.search(record["data"])
         if match:
             return ipaddress.IPv4Address(match.group())
+
+    logger.print_and_log("No IP address could be retrieved from GODADDY")
+    exit(-1)
 
 
 def is_same(ip_a, ip_b):
