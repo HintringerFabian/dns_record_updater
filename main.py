@@ -1,12 +1,15 @@
-from dotenv import dotenv_values
-
 import IpChecker
-from IpChecker import find_current_ip_address
+import RecordUpdater
 
 if __name__ == "__main__":
-    env = dotenv_values(".env")
-    current_ip = find_current_ip_address()
+    current_ip = IpChecker.find_current_ip_address()
 
     if current_ip == IpChecker.failed_ip_req:
         exit(-1)
 
+    godaddy_ip = IpChecker.find_godaddy_ip()
+
+    if IpChecker.is_same(godaddy_ip, current_ip):
+        exit(0)
+
+    RecordUpdater.update_records(current_ip)
