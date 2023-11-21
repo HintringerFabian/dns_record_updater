@@ -16,8 +16,9 @@ def run_update():
         logger.print_and_log("The ip did not change, no record will be updated")
         exit()
 
-    # uncomment after testing
     RecordUpdater.update_records(current_ip)
+    # logger.print_and_log("Would have run perfectly fine, but you are in test mode.")
+    exit()
 
 
 def print_help():

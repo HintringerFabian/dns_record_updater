@@ -1,0 +1,10 @@
+version: '3.7'
+
+services:
+  web:
+    build: .
+    container_name: dns_record_updater
+    restart: unless-stopped
+    volumes:
+      - ./.env:/app/.env
+      - ./dns_record_updater.log:/app/dns_record_updater.log
