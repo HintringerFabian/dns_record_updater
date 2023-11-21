@@ -38,8 +38,8 @@ def handle_args():
     elif arg_count > 1:
         logger.print_and_log(
             "The maximum amount of arguments allowed is 1.\n" +
-            f"But you provided {arg_count} arguments: {args}"
-            , logging.WARNING
+            f"But you provided {arg_count} arguments: {args}",
+            logging.WARNING
         )
         exit(-1)
 

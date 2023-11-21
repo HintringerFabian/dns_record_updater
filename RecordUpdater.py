@@ -33,7 +33,7 @@ def update(record, new_ip, env):
         requests.request("PUT", url, json=payload, headers=headers)
     except (Exception,) as e:
         failed = True
-        logger.print_and_log(f"Was not able to change the ip of record: {record}", logging.WARNING)
+        logger.print_and_log(f"Was not able to change the ip of record: {record}\n {e}", logging.WARNING)
 
     if not failed:
         logger.print_and_log(f"DNS record {record} now has the ip address {new_ip}")

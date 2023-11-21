@@ -16,8 +16,8 @@ def find_current_ip_address():
         external_ip = get('https://api.ipify.org').content.decode('utf8')
     except (Exception,) as e:
         logger.print_and_log(
-            "Failed to retrieve your public ip address" + e
-            , logging.WARNING
+            "Failed to retrieve your public ip address" + e,
+            logging.WARNING
         )
         exit(-1)
 
@@ -40,8 +40,8 @@ def get_dns_records():
         req = requests.request("GET", url, data=payload, headers=headers).text
     except (Exception,) as e:
         logger.print_and_log(
-            "Failed to retrieve your dns records" + e
-            , logging.WARNING
+            "Failed to retrieve your dns records" + e,
+            logging.WARNING
         )
         exit(-1)
 
