@@ -1,22 +1,24 @@
+import asyncio
 import logging
-
-import IpChecker
+from src import IpChecker
 import RecordUpdater
 import sys
 
-from Logger import Logger
+from src.Logger import Logger
 logger = Logger()
 
 
-def run_update():
-    current_ip = IpChecker.find_current_ip_address()
-    godaddy_ip = IpChecker.find_godaddy_ip()
+async def run_update():
+    current_ip, godaddy_ip = await asyncio.gather(
+        IpChecker.find_current_ip_address(),
+        IpChecker.find_godaddy_ip()
+    )
 
     if IpChecker.is_same(godaddy_ip, current_ip):
         logger.print_and_log("The ip did not change, no record will be updated")
         exit()
 
-    RecordUpdater.update_records(current_ip)
+    await RecordUpdater.update_records(current_ip)
     # logger.print_and_log("Would have run perfectly fine, but you are in test mode.")
     exit()
 
@@ -28,12 +30,12 @@ def print_help():
     print("or have a look through the README.md file to get a in depth description")
 
 
-def handle_args():
+async def handle_args():
     arg_count = len(sys.argv) - 1
     args = sys.argv[1:]
 
     if arg_count == 0:
-        run_update()
+        await run_update()
         exit()
     elif arg_count > 1:
         logger.print_and_log(
@@ -55,4 +57,4 @@ def handle_args():
 
 
 if __name__ == "__main__":
-    handle_args()
+    asyncio.run(handle_args())

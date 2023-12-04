@@ -4,14 +4,14 @@ from requests import get
 import requests
 import json
 import ipaddress
-from EnvReader import EnvReader
+from src.EnvReader import EnvReader
 import logging
 from Logger import Logger
 
 logger = Logger()
 
 
-def find_current_ip_address():
+async def find_current_ip_address():
     try:
         external_ip = get('https://api.ipify.org').content.decode('utf8')
     except (Exception,) as e:
@@ -24,7 +24,7 @@ def find_current_ip_address():
     return ipaddress.IPv4Address(external_ip)
 
 
-def get_dns_records():
+async def get_dns_records():
     env = EnvReader()
 
     url = f"https://api.godaddy.com/v1/domains/{env.domain}/records/A"
@@ -48,13 +48,13 @@ def get_dns_records():
     return json.loads(req)
 
 
-def find_godaddy_ip():
-    dns_records = get_dns_records()
+async def find_godaddy_ip():
+    dns_records_task = get_dns_records()
     # Define a regular expression to match an IPv4 address
     ip_regex = re.compile(r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b')
 
     # Iterate through the records
-    for record in dns_records:
+    for record in await dns_records_task:
         match = ip_regex.search(record["data"])
         if match:
             return ipaddress.IPv4Address(match.group())

@@ -1,8 +1,11 @@
-from EnvReader import EnvReader
-from IpChecker import get_dns_records
+import asyncio
+
 import requests
+
+from src.EnvReader import EnvReader
+from src.IpChecker import get_dns_records
 import logging
-from Logger import Logger
+from src.Logger import Logger
 
 logger = Logger()
 
@@ -17,7 +20,7 @@ def include_records(dns_records, env):
     return [record["name"] for record in dns_records if record["name"] in included_records]
 
 
-def update(record, new_ip, env):
+async def update(record, new_ip, env):
     url = f"https://api.godaddy.com/v1/domains/{env.domain}/records/A/{record}"
 
     payload = [
@@ -53,9 +56,18 @@ def filter_records(dns_records, env):
         return remove_excluded_records(dns_records, env)
 
 
-def update_records(new_ip):
+async def update_records(new_ip):
+    dns_records_task = get_dns_records()
+
     env = EnvReader()
-    dns_records = filter_records(get_dns_records(), env)
+    dns_records = await dns_records_task
+    dns_records = filter_records(dns_records, env)
+
+    await_updates = []
 
     for record in dns_records:
-        update(record, new_ip, env)
+        await_updates.append(
+            update(record, new_ip, env)
+        )
+
+    await asyncio.gather(*await_updates)
