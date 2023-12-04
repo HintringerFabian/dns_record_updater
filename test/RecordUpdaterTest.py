@@ -1,7 +1,11 @@
+import ipaddress
+import logging
 import unittest
 from unittest.mock import patch
 
-import src.RecordUpdater
+import requests
+
+from src import RecordUpdater
 from src.EnvReader import EnvReader
 from src.RecordUpdater import remove_excluded_records, include_records, filter_records
 
@@ -313,7 +317,8 @@ class TestIncludeRecords(unittest.TestCase):
 
         self.assertEqual(result, ["record1", "record3"])
 
-    # Returns DNS records with different values, in addition to the included records specified in the environment settings.
+    # Returns DNS records with different values,
+    # in addition to the included records specified in the environment settings.
     def test_include_records_with_different_values(self):
         dns_records = [
             {"name": "record1"},
@@ -343,7 +348,8 @@ class TestIncludeRecords(unittest.TestCase):
 
         self.assertEqual(set(result), {"record1", "record2"})
 
-    # Returns DNS records that match the included records specified in the environment settings, even when the input list of DNS records contains additional records that do not match.
+    # Returns DNS records that match the included records specified in the environment settings,
+    # even when the input list of DNS records contains additional records that do not match.
     def test_included_records(self):
         dns_records = [
             {"name": "record1"},
@@ -357,7 +363,8 @@ class TestIncludeRecords(unittest.TestCase):
 
         self.assertEqual(result, ["record1", "record3"])
 
-    # Returns DNS records that match the included records specified in the environment settings, even when the input list of DNS records contains records with missing "name" keys.
+    # Returns DNS records that match the included records specified in the environment settings,
+    # even when the input list of DNS records contains records with missing "name" keys.
     def test_include_records_with_missing_name_keys(self):
         dns_records = [
             {"name": "record1"},
@@ -374,7 +381,8 @@ class TestIncludeRecords(unittest.TestCase):
 
         self.assertEqual(result, {"record1", "record3"})
 
-    # Returns DNS records that match the included records specified in the environment settings, even when the input list of DNS records contains records with missing values for the "name" key.
+    # Returns DNS records that match the included records specified in the environment settings,
+    # even when the input list of DNS records contains records with missing values for the "name" key.
     def test_included_records(self):
         dns_records = [
             {"name": "record1"},
@@ -388,7 +396,8 @@ class TestIncludeRecords(unittest.TestCase):
 
         self.assertEqual(result, {"record1", "record3"})
 
-    # Returns DNS records that match the included records specified in the environment settings, even when the input list of DNS records contains records with duplicate "name" keys.
+    # Returns DNS records that match the included records specified in the environment settings,
+    # even when the input list of DNS records contains records with duplicate "name" keys.
     def test_include_records_with_duplicates(self):
         dns_records = [
             {"name": "record1"},
@@ -487,3 +496,97 @@ class TestFilterRecords(unittest.TestCase):
         # Try to call filter_records with invalid env type
         with self.assertRaises(TypeError):
             filter_records([], "not_an_env_instance")
+
+
+class TestUpdate(unittest.IsolatedAsyncioTestCase):
+
+    # Updates a DNS record with a new IP address using the GoDaddy API.
+    @unittest.mock.patch('requests.put')
+    async def test_update_dns_record(self, mock_put):
+        env = EnvReader()
+        record = "example.com"
+        new_ip = ipaddress.IPv4Address("192.168.0.1")
+
+        await RecordUpdater.update(record, new_ip, env)
+
+        url = f"https://api.godaddy.com/v1/domains/{env.domain}/records/A/{record}"
+        payload = [
+            {
+                "data": new_ip,
+                "ttl": 3600
+            }
+        ]
+        headers = {
+            "accept": "application/json",
+            "X-Shopper-Id": env.shopper_id,
+            "Content-Type": "application/json",
+            "Authorization": f"sso-key {env.api_key}:{env.api_secret}"
+        }
+
+        mock_put.assert_called_once_with(url, json=payload, headers=headers)
+
+    # Sends a PUT request to the GoDaddy API with the constructed URL, payload, and headers.
+    @unittest.mock.patch('requests.put')
+    async def test_send_put_request(self, mock_put):
+        env = EnvReader()
+        record = "example.com"
+        new_ip = ipaddress.IPv4Address("192.168.0.1")
+
+        url = f"https://api.godaddy.com/v1/domains/{env.domain}/records/A/{record}"
+        payload = [
+            {
+                "data": new_ip,
+                "ttl": 3600
+            }
+        ]
+        headers = {
+            "accept": "application/json",
+            "X-Shopper-Id": env.shopper_id,
+            "Content-Type": "application/json",
+            "Authorization": f"sso-key {env.api_key}:{env.api_secret}"
+        }
+
+        await RecordUpdater.update(record, new_ip, env)
+
+        mock_put.assert_called_once_with(url, json=payload, headers=headers)
+
+    # If the request is successful,
+    # logs a message indicating that the DNS record has been updated with the new IP address.
+    @unittest.mock.patch('requests.put')
+    async def test_successful_update(self, mock_put):
+        env = EnvReader()
+        record = "example.com"
+        new_ip = ipaddress.IPv4Address("192.168.0.1")
+
+        await RecordUpdater.update(record, new_ip, env)
+
+        url = f"https://api.godaddy.com/v1/domains/{env.domain}/records/A/{record}"
+        payload = [
+            {
+                "data": new_ip,
+                "ttl": 3600
+            }
+        ]
+        headers = {
+            "accept": "application/json",
+            "X-Shopper-Id": env.shopper_id,
+            "Content-Type": "application/json",
+            "Authorization": f"sso-key {env.api_key}:{env.api_secret}"
+        }
+
+        mock_put.assert_called_once_with(url, json=payload, headers=headers)
+
+    # If the request fails,
+    # logs a warning message indicating that the DNS record was not updated and the reason for the failure.
+    @unittest.mock.patch('requests.put')
+    async def test_request_failure_logs_warning_message(self, mock_put):
+        env = EnvReader()
+        record = "example.com"
+        new_ip = ipaddress.IPv4Address("192.168.0.1")
+
+        mock_put.side_effect = requests.exceptions.RequestException("Request failed")
+        with self.assertLogs(level=logging.WARNING) as cm:
+            await RecordUpdater.update(record, new_ip, env)
+
+        expected_log_message = f"Was not able to change the ip of record: {record}\n Request failed"
+        self.assertIn(expected_log_message, cm.output.pop())

@@ -1,12 +1,11 @@
-import ipaddress
-from typing import List
 import asyncio
+import ipaddress
+import logging
 
 import requests
 
 from src.EnvReader import EnvReader
 from src.IpChecker import get_dns_records
-import logging
 from src.Logger import Logger
 
 logger = Logger()
@@ -54,7 +53,8 @@ async def update(record: str, new_ip: ipaddress.IPv4Address, env: EnvReader) -> 
         env (EnvReader): An object that provides access to environment variables.
 
     Returns:
-        None: The function does not return any value. The result of the update operation is logged using the `Logger` class.
+        None: The function does not return any value.
+        The result of the update operation is logged using the `Logger` class.
     """
     url = f"https://api.godaddy.com/v1/domains/{env.domain}/records/A/{record}"
 

@@ -19,13 +19,27 @@ class EnvReader:
         result = re.sub(pattern, '', input_string)
         return result
 
+    @staticmethod
+    def __split_dns_record(record: str) -> List[str]:
+        """
+        Private method that takes a DNS record and splits it by the comma into a list of strings.
+        """
+        if not isinstance(record, str):
+            return []
+        elif not record.strip():
+            return []
+        else:
+            split_records = record.split(",")
+            return [record for record in split_records if record.strip()]
+
     def __prepare_dns_records(self, dns_records: str) -> List[str]:
         """
         Private method that takes a comma-separated string of DNS records and cleans them up by removing whitespace,
         newline, and tab characters.
         It returns a list of cleaned up DNS records.
         """
-        return [self.__prepare_record(record) for record in dns_records.split(",")]
+        split_records = self.__split_dns_record(dns_records)
+        return [self.__prepare_record(record) for record in split_records]
 
     def __validate_mode(self):
         """
