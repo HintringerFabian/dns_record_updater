@@ -1,26 +1,30 @@
 import asyncio
 import logging
-from src import IpChecker
-import RecordUpdater
 import sys
 
+from IpChecker import are_same_ipv4
+from RecordUpdater import update_records
+from src import IpChecker
 from src.Logger import Logger
+
 logger = Logger()
 
 
-async def run_update():
-    current_ip, godaddy_ip = await asyncio.gather(
-        IpChecker.find_current_ip_address(),
-        IpChecker.find_godaddy_ip()
-    )
+async def run_update() -> None:
+    """
+    Update the DNS records with a new IP address if the current IP address is different from the IP address
+    stored in the GoDaddy DNS records.
 
-    if IpChecker.is_same(godaddy_ip, current_ip):
-        logger.print_and_log("The ip did not change, no record will be updated")
-        exit()
+    :return: None
+    """
+    current_ip, godaddy_ip = await IpChecker.get_ip_addresses()
 
-    await RecordUpdater.update_records(current_ip)
-    # logger.print_and_log("Would have run perfectly fine, but you are in test mode.")
-    exit()
+    if are_same_ipv4(godaddy_ip, current_ip):
+        logger.print_and_log("The IP did not change, no record will be updated")
+        return
+
+    await update_records(current_ip)
+    logger.print_and_log("DNS records updated successfully")
 
 
 def print_help():
@@ -31,6 +35,12 @@ def print_help():
 
 
 async def handle_args():
+    """
+    Handle command line arguments passed to the script.
+
+    Returns:
+        None
+    """
     arg_count = len(sys.argv) - 1
     args = sys.argv[1:]
 
@@ -39,7 +49,7 @@ async def handle_args():
         exit()
     elif arg_count > 1:
         logger.print_and_log(
-            "The maximum amount of arguments allowed is 1.\n" +
+            f"The maximum amount of arguments allowed is 1.\n" +
             f"But you provided {arg_count} arguments: {args}",
             logging.WARNING
         )
@@ -47,11 +57,8 @@ async def handle_args():
 
     argument = args[0]
 
-    match argument:
-        case "-h":
-            print_help()
-        case "--help":
-            print_help()
+    if argument in ["-h", "--help"]:
+        print_help()
 
     exit()
 
